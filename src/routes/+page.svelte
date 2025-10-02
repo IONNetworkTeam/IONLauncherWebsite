@@ -3,6 +3,9 @@
     import { fetchLatestReleases } from './components/fetchLatestRelease.js';
     import { detectOS, getOSPlatformName } from './components/osDetection.js';
     import { getCopyrightText } from './components/copyright.js';
+    import { fetchDistributionData } from './components/distributionApi.js';
+
+    import projectWebsites from '$lib/data/projectWebsites.json';
     import DiscordSvg from "$lib/svg/web/discord.svg";
     import GithubSvg from "$lib/svg/web/github.svg";
     import YoutubeSvg from "$lib/svg/web/youtube.svg";
@@ -35,16 +38,31 @@
     let selectedPlatform = '';
     let showImageModal = false;
     let selectedImage = null;
+    let projects = [];
+    let projectsError = '';
 
     onMount(async () => {
         try {
             downloadLinks = await fetchLatestReleases();
             userOS = detectOS();
+            projects = await fetchDistributionData();
         } catch (e) {
             error = 'Failed to load download links. Please try again later.';
+            projectsError = 'Failed to load projects. Please try again later.';
             console.error(e);
         }
     });
+
+    function getProjectWebsite(projectId) {
+        return projectWebsites[projectId] || null;
+    }
+
+    function openProjectWebsite(projectId) {
+        const website = getProjectWebsite(projectId);
+        if (website) {
+            window.open(website, '_blank');
+        }
+    }
 
     function openVersionSelector(platform) {
         const options = versionOptions[platform] || [];
@@ -247,48 +265,133 @@
 
 <div class="dark bg-black min-h-screen">
     <!-- Hero Section -->
-     <section id="hero" class="relative flex flex-col items-center justify-center min-h-screen bg-black md:shadow-xl" style="background-image: url('wallpaper.png'); background-size: cover; background-position: center;">
-         <DotPattern class="[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]" />
+    <section id="hero" class="relative flex flex-col items-center justify-center min-h-screen bg-black md:shadow-xl" style="background-image: url('wallpaper.png'); background-size: cover; background-position: center;">
+        <DotPattern class="[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]" />
 
-         <!-- Logo -->
-         <img
-             src="/IONLauncherLogo.png"
-             alt="ION Launcher Logo"
-             class="w-32 h-32 md:w-48 md:h-48 mb-2 object-contain"
-         />
+        <!-- Logo -->
+        <img
+                src="/IONLauncherLogo.png"
+                alt="ION Launcher Logo"
+                class="w-32 h-32 md:w-48 md:h-48 mb-2 object-contain"
+        />
 
-         <span class="pointer-events-none whitespace-pre-wrap bg-gradient-to-b from-black to-gray-300/80 bg-clip-text text-center text-4xl md:text-8xl font-semibold leading-none text-transparent dark:from-white dark:to-slate-900/10">
-             ION Launcher
-         </span>
+        <span class="pointer-events-none whitespace-pre-wrap bg-gradient-to-b from-black to-gray-300/80 bg-clip-text text-center text-4xl md:text-8xl font-semibold leading-none text-transparent dark:from-white dark:to-slate-900/10">
+        ION Launcher
+        </span>
 
-         <div class="mb-8">
-             <Dock direction="middle" class="relative" let:mouseX let:distance let:magnification>
-                 {#each navs.navbar as item}
-                     <button on:click={() => openVersionSelector(item.platform)}>
-                         <DockIcon {mouseX} {magnification} {distance}>
-                             <Tooltip.Root>
-                                 <Tooltip.Trigger class="hover:bg-zinc-900/80 transition-all duration-200 rounded-full">
-                                     <img src={item.icon} alt={item.label} class="m-3 h-5 w-5 text-white" style="fill: white;" />
-                                 </Tooltip.Trigger>
-                                 <Tooltip.Content sideOffset={9}>
-                                     <p>{item.label}</p>
-                                 </Tooltip.Content>
-                             </Tooltip.Root>
-                         </DockIcon>
-                     </button>
-                 {/each}
-             </Dock>
-         </div>
+        <div class="mb-8">
+            <Dock direction="middle" class="relative" let:mouseX let:distance let:magnification>
+                {#each navs.navbar as item}
+                    <button on:click={() => openVersionSelector(item.platform)}>
+                        <DockIcon {mouseX} {magnification} {distance}>
+                            <Tooltip.Root>
+                                <Tooltip.Trigger class="hover:bg-zinc-900/80 transition-all duration-200 rounded-full">
+                                    <img src={item.icon} alt={item.label} class="m-3 h-5 w-5 text-white" style="fill: white;" />
+                                </Tooltip.Trigger>
+                                <Tooltip.Content sideOffset={9}>
+                                    <p>{item.label}</p>
+                                </Tooltip.Content>
+                            </Tooltip.Root>
+                        </DockIcon>
+                    </button>
+                {/each}
+            </Dock>
+        </div>
 
-         <!-- Scroll indicator -->
-         <div class="absolute bottom-8 left-1/2 -translate-x-1/2 transform animate-bounce">
-             <button on:click={() => scrollToSection('features')} class="text-gray-400 hover:text-white transition-colors">
-                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                 </svg>
-             </button>
-         </div>
-     </section>
+        <!-- Social Media Icons - Bottom Right Corner -->
+        <div class="absolute bottom-4 right-4 flex flex-row space-x-2">
+            {#each navs.contact as social}
+                <a
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex items-center justify-center w-10 h-10 rounded-full hover:border-zinc-600 hover:bg-zinc-800/90 backdrop-blur-sm transition-all duration-200 group"
+                >
+                    <Tooltip.Root>
+                        <Tooltip.Trigger>
+                            <img src={social.icon} alt={social.label} class="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+                        </Tooltip.Trigger>
+                        <Tooltip.Content side="top" sideOffset={8}>
+                            <p>{social.label}</p>
+                        </Tooltip.Content>
+                    </Tooltip.Root>
+                </a>
+            {/each}
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 transform animate-bounce">
+            <button on:click={() => scrollToSection('projects')} class="text-gray-400 hover:text-white transition-colors">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+        </button>
+        </div>
+    </section>
+
+
+
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-20 px-4 bg-zinc-950">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl md:text-6xl font-bold text-white text-center mb-4">Available Projects</h2>
+            <p class="text-gray-400 text-xl text-center mb-16 max-w-3xl mx-auto">
+                Explore the different server projects available in ION Launcher
+            </p>
+
+            {#if projectsError}
+                <div class="text-red-400 text-center mb-8">
+                    {projectsError}
+                </div>
+            {:else if projects.length === 0}
+                <div class="text-gray-400 text-center">
+                    Loading projects...
+                </div>
+            {:else}
+                <div class="flex flex-wrap justify-center gap-8">
+                    {#each projects as project}
+                        <div class="flex-none w-full sm:w-80 md:w-96 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden hover:border-zinc-600 transition-all duration-300 hover:transform hover:-translate-y-1">
+                            <div class="p-6">
+                                <div class="flex items-center mb-4">
+                                    <img
+                                            src={project.icon}
+                                            alt={project.name}
+                                            class="w-12 h-12 rounded-lg mr-4 object-cover"
+                                            loading="lazy"
+                                    />
+                                    <div class="flex-1">
+                                        <h3 class="text-xl font-semibold text-white mb-2">{project.name}</h3>
+                                        <div class="flex gap-2">
+                                        <span class="inline-block bg-zinc-800 text-gray-400 text-xs px-2 py-1 rounded">
+                                            v{project.version}
+                                        </span>
+                                            <span class="inline-block bg-zinc-800 text-gray-400 text-xs px-2 py-1 rounded">
+                                            MC {project.minecraftVersion}
+                                        </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p class="text-gray-400 mb-4 leading-relaxed">{project.description}</p>
+
+                                {#if getProjectWebsite(project.id)}
+                                    <button
+                                            on:click={() => openProjectWebsite(project.id)}
+                                            class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 border border-zinc-600 hover:border-zinc-500"
+                                    >
+                                        Visit Website
+                                    </button>
+                                {/if}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+    </section>
+
+
 
 
 
