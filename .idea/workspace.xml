@@ -4,11 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cb65169e-a938-4be2-acad-b7e4bc7ec084" name="Changes" comment="Update website structure">
-      <change afterPath="$PROJECT_DIR$/src/routes/components/ShimmerButton.svelte" afterDir="false" />
+    <list default="true" id="cb65169e-a938-4be2-acad-b7e4bc7ec084" name="Changes" comment="Add version selection popup and enhance download link structure for multiple platforms">
+      <change afterPath="$PROJECT_DIR$/src/routes/components/copyright.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/routes/components/osDetection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/routes/+page.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/+page.svelte" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/routes/components/fetchLatestRelease.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/components/fetchLatestRelease.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/favicon.png" beforeDir="false" afterPath="$PROJECT_DIR$/static/favicon.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,7 +107,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733533860711</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Add version selection popup and enhance download link structure for multiple platforms">
+      <option name="closed" value="true" />
+      <created>1759399344044</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1759399344044</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -139,6 +148,7 @@
     <MESSAGE value="Update README.md" />
     <MESSAGE value="Add code to fetch latest launcher release" />
     <MESSAGE value="Update website structure" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update website structure" />
+    <MESSAGE value="Add version selection popup and enhance download link structure for multiple platforms" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add version selection popup and enhance download link structure for multiple platforms" />
   </component>
 </project>

@@ -1,6 +1,27 @@
 <script>
     import { onMount } from 'svelte';
     import { fetchLatestReleases } from './components/fetchLatestRelease.js';
+    import { detectOS, getOSPlatformName } from './components/osDetection.js';
+    import { getCopyrightText } from './components/copyright.js';
+    import DiscordSvg from "$lib/svg/web/discord.svg";
+    import GithubSvg from "$lib/svg/web/github.svg";
+    import YoutubeSvg from "$lib/svg/web/youtube.svg";
+    import InstagramSvg from "$lib/svg/web/instagram.svg";
+    import LinuxSvg from "$lib/svg/web/linux.svg";
+    import AppleSvg from "$lib/svg/web/apple.svg";
+    import WindowsSvg from "$lib/svg/web/windows.svg";
+    import MacArmSvg from "$lib/svg/web/mac-arm.svg";
+    import MacX64Svg from "$lib/svg/web/mac-x64.svg";
+    import FlatpakSvg from "$lib/svg/web/flatpak.svg";
+    import AppimageSvg from "$lib/svg/web/appimage.svg";
+    import * as Tooltip from "$lib/components/ui/tooltip";
+    import Separator from "$lib/components/ui/separator/separator.svelte";
+    //   Major Components
+    import Dock from "./components/Dock.svelte";
+    import DockIcon from "./components/DockIcon.svelte";
+    import DotPattern from "./components/DotPattern.svelte";
+
+    const copyrightText = getCopyrightText('ION Network Team', 2016);
 
     let downloadLinks = {
         Windows: null,
@@ -12,26 +33,30 @@
     let error = '';
     let showVersionPopup = false;
     let selectedPlatform = '';
+    let showImageModal = false;
+    let selectedImage = null;
 
     onMount(async () => {
         try {
             downloadLinks = await fetchLatestReleases();
-            userOS = getUserOS();
+            userOS = detectOS();
         } catch (e) {
             error = 'Failed to load download links. Please try again later.';
             console.error(e);
         }
     });
 
-    function getUserOS() {
-        const platform = navigator.platform.toLowerCase();
-        if (platform.indexOf('win') !== -1) return 'Windows';
-        if (platform.indexOf('mac') !== -1) return 'MacOS';
-        if (platform.indexOf('linux') !== -1 || platform.indexOf('x11') !== -1) return 'Linux';
-        return 'Unknown';
-    }
-
     function openVersionSelector(platform) {
+        const options = versionOptions[platform] || [];
+        const availableOptions = options.filter(option => option.url);
+
+        // If only one option is available, download directly
+        if (availableOptions.length === 1) {
+            handleDownload(availableOptions[0].url);
+            return;
+        }
+
+        // If multiple options or no options, show popup
         selectedPlatform = platform;
         showVersionPopup = true;
     }
@@ -52,43 +77,55 @@
         document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
     }
 
-    import DiscordSvg from "$lib/svg/web/discord.svg";
-    import GithubSvg from "$lib/svg/web/github.svg";
-    import YoutubeSvg from "$lib/svg/web/youtube.svg";
-    import InstagramSvg from "$lib/svg/web/instagram.svg";
-    import LinuxSvg from "$lib/svg/web/linux.svg";
-    import AppleSvg from "$lib/svg/web/apple.svg";
-    import WindowsSvg from "$lib/svg/web/windows.svg";
-    import MacArmSvg from "$lib/svg/web/mac-arm.svg";
-    import MacX64Svg from "$lib/svg/web/mac-x64.svg";
-    import FlatpakSvg from "$lib/svg/web/flatpak.svg";
-    import AppimageSvg from "$lib/svg/web/appimage.svg";
-    //    Shadcn Components
-    import * as Tooltip from "$lib/components/ui/tooltip";
-    import Separator from "$lib/components/ui/separator/separator.svelte";
-    //   Major Components
-    import Dock from "./components/Dock.svelte";
-    import DockIcon from "./components/DockIcon.svelte";
-    import DotPattern from "./components/DotPattern.svelte";
+    function openImageModal(screenshot) {
+        selectedImage = screenshot;
+        showImageModal = true;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeImageModal() {
+        showImageModal = false;
+        selectedImage = null;
+        document.body.style.overflow = 'auto';
+    }
+
+    function handleKeydown(event) {
+        if (event.key === 'Escape') {
+            if (showImageModal) {
+                closeImageModal();
+            } else if (showVersionPopup) {
+                closeVersionPopup();
+            }
+        }
+    }
+
+    const allPlatforms = [
+        {
+            label: "Windows",
+            icon: WindowsSvg,
+            platform: "Windows"
+        },
+        {
+            label: "Linux",
+            icon: LinuxSvg,
+            platform: "Linux"
+        },
+        {
+            label: "MacOS",
+            icon: AppleSvg,
+            platform: "MacOS"
+        },
+    ];
 
     $: navs = {
-        navbar: [
-            {
-                label: "Windows",
-                icon: WindowsSvg,
-                platform: "Windows"
-            },
-            {
-                label: "Linux",
-                icon: LinuxSvg,
-                platform: "Linux"
-            },
-            {
-                label: "MacOS",
-                icon: AppleSvg,
-                platform: "MacOS"
-            },
-        ],
+        // Reorder platforms based on detected OS
+        navbar: (() => {
+            const userPlatformName = getOSPlatformName(userOS);
+            const userPlatform = allPlatforms.find(p => p.platform === userPlatformName);
+            const otherPlatforms = allPlatforms.filter(p => p.platform !== userPlatformName);
+
+            return userPlatform ? [userPlatform, ...otherPlatforms] : allPlatforms;
+        })(),
         contact: [
             {
                 label: "Github",
@@ -147,22 +184,22 @@
         ]
     };
 
-    // Features data
+    // Rest of your existing code (features, screenshots, etc.)
     const features = [
         {
-            title: "Fast & Efficient",
-            description: "Lightning-fast startup and optimized performance for all your gaming needs.",
-            icon: "⚡"
+            title: "Automatic Java installation",
+            description: "If you have an incompatible version of Java installed, we'll install the right one for you.",
+            icon: "☕"
         },
         {
             title: "Cross-Platform",
-            description: "Available on Windows, macOS, and Linux with native performance on each platform.",
+            description: "Available on Windows, macOS (x64 and ARM), and Linux (Flatpak and AppImage).",
             icon: "🌍"
         },
         {
-            title: "Easy Management",
-            description: "Intuitive interface for managing your game library and mods with just a few clicks.",
-            icon: "🎮"
+            title: "Full account management",
+            description: "Add multiple accounts and easily switch between them. Credentials are never stored and transmitted directly to Mojang.",
+            icon: "🔒"
         },
         {
             title: "Auto Updates",
@@ -170,18 +207,17 @@
             icon: "🔄"
         },
         {
-            title: "Mod Support",
-            description: "Built-in mod manager with support for popular modding platforms and tools.",
-            icon: "🔧"
+            title: "Supports all our Servers",
+            description: "Switch between server configurations with ease. View the player count of the selected server.",
+            icon: "🖥️"
         },
         {
-            title: "Cloud Sync",
-            description: "Sync your settings and saves across multiple devices with cloud integration.",
-            icon: "☁️"
+            title: "View Mojang status",
+            description: "Check the current status of Mojang services directly from the launcher.",
+            icon: "📡"
         }
     ];
 
-    // Screenshots data - replace with your actual screenshot paths
     const screenshots = [
         {
             src: "/screenshots/launcher-main.png",
@@ -189,60 +225,72 @@
             title: "Main Interface"
         },
         {
-            src: "/screenshots/game-library.png",
-            alt: "Game Library View",
-            title: "Game Library"
+            src: "/screenshots/automatic-java-selection.png",
+            alt: "Automatic Java Selection",
+            title: "Java Selection"
         },
         {
-            src: "/screenshots/mod-manager.png",
-            alt: "Mod Manager Interface",
-            title: "Mod Manager"
+            src: "/screenshots/mod-section.png",
+            alt: "Mod Selection Interface",
+            title: "Mod Selection"
         },
         {
-            src: "/screenshots/settings.png",
-            alt: "Settings Panel",
-            title: "Settings"
+            src: "/screenshots/account-management.png",
+            alt: "Account Management",
+            title: "Account Management"
         }
     ];
 </script>
 
+
+<svelte:window on:keydown={handleKeydown} />
+
 <div class="dark bg-black min-h-screen">
     <!-- Hero Section -->
-    <section id="hero" class="relative flex h-[100vh] w-[100vw] flex-col items-center justify-center overflow-hidden bg-black md:shadow-xl" style="background-image: url('wallpaper.png'); background-size: cover; background-position: center;">
-        <DotPattern class="[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]" />
+     <section id="hero" class="relative flex flex-col items-center justify-center min-h-screen bg-black md:shadow-xl" style="background-image: url('wallpaper.png'); background-size: cover; background-position: center;">
+         <DotPattern class="[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]" />
 
-        <span class="pointer-events-none whitespace-pre-wrap bg-gradient-to-b from-black to-gray-300/80 bg-clip-text text-center text-4xl md:text-8xl font-semibold leading-none text-transparent dark:from-white dark:to-slate-900/10">
-            ION Launcher
-        </span>
+         <!-- Logo -->
+         <img
+             src="/IONLauncherLogo.png"
+             alt="ION Launcher Logo"
+             class="w-32 h-32 md:w-48 md:h-48 mb-2 object-contain"
+         />
 
-        <div class="mb-8">
-            <Dock direction="middle" class="relative" let:mouseX let:distance let:magnification>
-                {#each navs.navbar as item}
-                    <button on:click={() => openVersionSelector(item.platform)}>
-                        <DockIcon {mouseX} {magnification} {distance}>
-                            <Tooltip.Root>
-                                <Tooltip.Trigger class="hover:bg-zinc-900/80 transition-all duration-200 rounded-full">
-                                    <img src={item.icon} alt={item.label} class="m-3 h-5 w-5 text-white" style="fill: white;" />
-                                </Tooltip.Trigger>
-                                <Tooltip.Content sideOffset={9}>
-                                    <p>{item.label}</p>
-                                </Tooltip.Content>
-                            </Tooltip.Root>
-                        </DockIcon>
-                    </button>
-                {/each}
-            </Dock>
-        </div>
+         <span class="pointer-events-none whitespace-pre-wrap bg-gradient-to-b from-black to-gray-300/80 bg-clip-text text-center text-4xl md:text-8xl font-semibold leading-none text-transparent dark:from-white dark:to-slate-900/10">
+             ION Launcher
+         </span>
 
-        <!-- Scroll indicator -->
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <button on:click={() => scrollToSection('features')} class="text-gray-400 hover:text-white transition-colors">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-            </button>
-        </div>
-    </section>
+         <div class="mb-8">
+             <Dock direction="middle" class="relative" let:mouseX let:distance let:magnification>
+                 {#each navs.navbar as item}
+                     <button on:click={() => openVersionSelector(item.platform)}>
+                         <DockIcon {mouseX} {magnification} {distance}>
+                             <Tooltip.Root>
+                                 <Tooltip.Trigger class="hover:bg-zinc-900/80 transition-all duration-200 rounded-full">
+                                     <img src={item.icon} alt={item.label} class="m-3 h-5 w-5 text-white" style="fill: white;" />
+                                 </Tooltip.Trigger>
+                                 <Tooltip.Content sideOffset={9}>
+                                     <p>{item.label}</p>
+                                 </Tooltip.Content>
+                             </Tooltip.Root>
+                         </DockIcon>
+                     </button>
+                 {/each}
+             </Dock>
+         </div>
+
+         <!-- Scroll indicator -->
+         <div class="absolute bottom-8 left-1/2 -translate-x-1/2 transform animate-bounce">
+             <button on:click={() => scrollToSection('features')} class="text-gray-400 hover:text-white transition-colors">
+                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                 </svg>
+             </button>
+         </div>
+     </section>
+
+
 
     <!-- Features Section -->
     <section id="features" class="py-20 px-4 bg-zinc-950">
@@ -269,12 +317,15 @@
         <div class="max-w-6xl mx-auto">
             <h2 class="text-4xl md:text-6xl font-bold text-white text-center mb-4">Screenshots</h2>
             <p class="text-gray-400 text-xl text-center mb-16 max-w-3xl mx-auto">
-                Take a look at ION Launcher in action
+                Take a look at ION Launcher in action. Click to enlarge.
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {#each screenshots as screenshot}
-                    <div class="group relative overflow-hidden rounded-lg border border-zinc-700 hover:border-zinc-600 transition-all duration-300">
+                    <button
+                        on:click={() => openImageModal(screenshot)}
+                        class="group relative overflow-hidden rounded-lg border border-zinc-700 hover:border-zinc-600 transition-all duration-300 cursor-pointer"
+                    >
                         <img
                             src={screenshot.src}
                             alt={screenshot.alt}
@@ -282,11 +333,17 @@
                             loading="lazy"
                         />
                         <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
-                            <h3 class="text-white text-xl font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                {screenshot.title}
-                            </h3>
+                            <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
+                                <h3 class="text-white text-xl font-semibold mb-2">{screenshot.title}</h3>
+                                <div class="text-gray-300 text-sm flex items-center justify-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                    </svg>
+                                    Click to enlarge
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </button>
                 {/each}
             </div>
         </div>
@@ -318,10 +375,38 @@
     <!-- Footer -->
     <footer class="py-8 px-4 bg-black border-t border-zinc-800">
         <div class="max-w-6xl mx-auto text-center">
-            <p class="text-gray-500">© 2024 ION Network Team. All rights reserved.</p>
+            <p class="text-gray-500">{copyrightText}</p>
         </div>
     </footer>
 </div>
+
+<!-- Image Modal -->
+{#if showImageModal && selectedImage}
+    <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-sm" on:click={closeImageModal}>
+        <div class="relative max-w-[95vw] max-h-[95vh] m-4">
+            <button
+                on:click={closeImageModal}
+                class="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10"
+            >
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <img
+                src={selectedImage.src}
+                alt={selectedImage.alt}
+                class="max-w-full max-h-[95vh] object-contain rounded-lg shadow-2xl"
+                on:click|stopPropagation
+            />
+
+            <div class="absolute -bottom-16 left-0 right-0 text-center">
+                <h3 class="text-white text-xl font-semibold mb-1">{selectedImage.title}</h3>
+                <p class="text-gray-400 text-sm">Press ESC or click outside to close</p>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <!-- Version Selection Popup -->
 {#if showVersionPopup}
